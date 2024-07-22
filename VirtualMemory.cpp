@@ -21,12 +21,16 @@ void clearFrame(uint64_t frame) {
 }
 
 uint64_t find_unused_frame_recursive(uint64_t current_page_addr, uint_least64_t
-*max_used, uint64_t depth){
+*max_used, uint64_t depth, uint64_t safe_frame){
   word_t value;
   uint64_t addr, result = -2;
 
   //updates max used tree
   *max_used += 1;
+
+  //this is a page without children that is untouchable
+  if (safe_frame == current_page_addr)
+    return -1;
 
   if (depth == TABLES_DEPTH) //page is not part of the tree
     return -1;
@@ -37,7 +41,7 @@ uint64_t find_unused_frame_recursive(uint64_t current_page_addr, uint_least64_t
     addr = value;
     if (addr != 0)
     {
-      result = find_unused_frame_recursive ( addr, max_used, depth + 1);
+      result = find_unused_frame_recursive (addr, max_used, depth + 1, safe_frame);
 
       if (result != -1 && result != -2) //we have a good result
         return result;
@@ -50,7 +54,7 @@ uint64_t find_unused_frame_recursive(uint64_t current_page_addr, uint_least64_t
   return result;
 }
 
-uint64_t find_unused_frame(){
+uint64_t find_unused_frame(uint64_t safe_frame){
   uint64_t max_used = 1;
   word_t value;
   uint64_t addr, result = -2;
@@ -60,7 +64,7 @@ uint64_t find_unused_frame(){
     addr = value;
     if (addr != 0)
     {
-      result = find_unused_frame_recursive (addr, &max_used, 1);
+      result = find_unused_frame_recursive (addr, &max_used, 1, safe_frame);
 
       if (result != -1 && result != -2) //we have a good result
         return result;
@@ -68,18 +72,28 @@ uint64_t find_unused_frame(){
   }
   //if result has not changed then 0 has no sons
   if (result == -2)
-    return 0; //the current frame address is 0
+    if (safe_frame == 0)
+      result = -1;
+    else
+      return 0; //the current frame address is 0
   if (result == -1) //should be always correct
     if (max_used < NUM_FRAMES)
-      return max_used;
+      return max_used * PAGE_SIZE;
     else
       return -1;
 }
 
 
-uint64_t evict_frame()
+uint64_t evict_frame(uint64_t wanted_page)
 {
-    return 0;
+
+  return 0;
+}
+
+uint64_t evict_frame_recursive(uint64_t current_page_addr, uint_least64_t
+wanted_page, uint64_t depth)
+{
+
 }
 
 
