@@ -88,21 +88,15 @@ uint64_t find_unused_frame(uint64_t safe_frame){
 }
 
 
-uint64_t evict_frame(uint64_t wanted_virtual_address)
-{
-
-  return 0;
-}
-
 void evict_frame_recursive(uint64_t current_page_addr, uint_least64_t
 wanted_virtual_address, uint64_t *largest_distance, uint64_t *best_frame,
-uint64_t depth, uint64_t current_virtual_addr)
+                           uint64_t depth, uint64_t current_virtual_addr)
 {
   if (depth == TABLES_DEPTH)
   {
     uint64_t current_distance = min(abs(current_page_addr -
-    wanted_virtual_address),NUM_PAGES -
-    abs(current_page_addr - wanted_virtual_address));
+                                        wanted_virtual_address),NUM_PAGES -
+                                                                abs(current_page_addr - wanted_virtual_address));
     if (current_distance > *largest_distance)
     {
       *largest_distance = current_distance;
@@ -111,7 +105,43 @@ uint64_t depth, uint64_t current_virtual_addr)
     return;
   }
 
+  word_t value = 0;
+  uint64_t addr;
 
+
+  for (uint64_t i = 0; i < pow(2, OFFSET_WIDTH); ++i)
+  {
+    PMread (current_page_addr * PAGE_SIZE + i, &value);
+    addr = value;
+    if (addr != 0)
+    {
+      evict_frame_recursive(addr, wanted_virtual_address, largest_distance,
+                            best_frame, depth+1, current_virtual_addr *
+                                                 PAGE_SIZE +i);
+    }
+  }
+}
+
+uint64_t evict_frame(uint64_t wanted_virtual_address)
+{
+
+  uint64_t largest_distance = -1;
+  uint64_t best_frame = -1;
+  word_t value = 0;
+  uint64_t addr;
+
+
+  for (uint64_t i = 0; i < pow(2, OFFSET_WIDTH); ++i)
+  {
+    PMread (i, &value);
+    addr = value;
+    if (addr != 0)
+    {
+      evict_frame_recursive(addr, wanted_virtual_address, &largest_distance,
+                            &best_frame, 1, i);
+    }
+  }
+  return best_frame;
 }
 
 
