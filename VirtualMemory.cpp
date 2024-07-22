@@ -5,6 +5,10 @@
 //the offset of the smaller and top layer of the tree (in bytes)
 #define SMALL_OFFSET (VIRTUAL_ADDRESS_WIDTH - OFFSET_WIDTH) % OFFSET_WIDTH
 
+uint64_t min(uint64_t a, uint64_t b) {
+  return (a < b) ? a : b;
+}
+
 // Helper functions
 uint64_t getOffset(uint64_t address) {
     return address & ((1 << OFFSET_WIDTH) - 1);
@@ -84,15 +88,29 @@ uint64_t find_unused_frame(uint64_t safe_frame){
 }
 
 
-uint64_t evict_frame(uint64_t wanted_page)
+uint64_t evict_frame(uint64_t wanted_virtual_address)
 {
 
   return 0;
 }
 
-uint64_t evict_frame_recursive(uint64_t current_page_addr, uint_least64_t
-wanted_page, uint64_t depth)
+void evict_frame_recursive(uint64_t current_page_addr, uint_least64_t
+wanted_virtual_address, uint64_t *largest_distance, uint64_t *best_frame,
+uint64_t depth, uint64_t current_virtual_addr)
 {
+  if (depth == TABLES_DEPTH)
+  {
+    uint64_t current_distance = min(abs(current_page_addr -
+    wanted_virtual_address),NUM_PAGES -
+    abs(current_page_addr - wanted_virtual_address));
+    if (current_distance > *largest_distance)
+    {
+      *largest_distance = current_distance;
+      *best_frame = current_page_addr;
+    }
+    return;
+  }
+
 
 }
 
