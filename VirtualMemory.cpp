@@ -32,9 +32,6 @@ uint64_t find_unused_frame_recursive(uint64_t current_page_addr, uint_least64_t
   //updates max used tree
   *max_used += 1;
 
-  //this is a page without children that is untouchable
-  if (safe_frame == current_page_addr)
-    return -1;
 
   if (depth == TABLES_DEPTH) //page is not part of the tree
     return -1;
@@ -46,13 +43,15 @@ uint64_t find_unused_frame_recursive(uint64_t current_page_addr, uint_least64_t
     if (addr != 0)
     {
       result = find_unused_frame_recursive (addr, max_used, depth + 1, safe_frame);
-
       if (result != -1 && result != -2) //we have a good result
         return result;
     }
   }
   //if result has not changed then current_page has no sons
   if (result == -2)
+    //this is a page without children that is untouchable
+    if (safe_frame == current_page_addr)
+      return -1;
     result = current_page_addr;
 
   return result;
