@@ -163,6 +163,7 @@ int VMread(uint64_t virtualAddress, word_t* value){
     uint64_t frame = 0; // Start from the root page table in frame 0
     uint64_t offset = getOffset(virtualAddress);
     uint64_t currentAddress = virtualAddress;
+    uint64_t safe_frame = -1;
 
     for (int depth = 0; depth < TABLES_DEPTH; ++depth) {
         uint64_t page = getPage(currentAddress, depth);
@@ -171,9 +172,9 @@ int VMread(uint64_t virtualAddress, word_t* value){
 
         if (entry == 0) {
             // Allocate a new frame if not already mapped
-            uint64_t newFrame = find_unused_frame();
+            uint64_t newFrame = find_unused_frame(safe_frame);
             if (newFrame == -1){
-                newFrame = evict_frame();
+                newFrame = evict_frame(virtualAddress);
             }
             clearFrame(newFrame);
             PMwrite(frame * PAGE_SIZE + page, newFrame);
@@ -181,6 +182,7 @@ int VMread(uint64_t virtualAddress, word_t* value){
         }
 
         frame = entry;
+        safe_frame = frame;
     }
 
     PMread(frame * PAGE_SIZE + offset, value);
@@ -196,6 +198,7 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
     uint64_t frame = 0; // Start from the root page table in frame 0
     uint64_t offset = getOffset(virtualAddress);
     uint64_t currentAddress = virtualAddress;
+    uint64_t safe_frame = -1;
 
     for (int depth = 0; depth < TABLES_DEPTH; ++depth) {
         uint64_t page = getPage(currentAddress, depth);
@@ -204,9 +207,9 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
 
         if (entry == 0) {
             // Allocate a new frame if not already mapped
-            uint64_t newFrame = find_unused_frame();
+            uint64_t newFrame = find_unused_frame(safe_frame);
             if (newFrame == -1){
-                newFrame = evict_frame();
+                newFrame = evict_frame(virtualAddress);
             }
             clearFrame(newFrame);
             PMwrite(frame * PAGE_SIZE + page, newFrame);
@@ -214,6 +217,7 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
         }
 
         frame = entry;
+        safe_frame = frame;
     }
 
     PMwrite(frame * PAGE_SIZE + offset, value);
