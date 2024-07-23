@@ -204,7 +204,8 @@ int VMread(uint64_t virtualAddress, word_t* value){
                 newFrame = evict_frame(virtualAddress >> OFFSET_WIDTH);
             }
             clearFrame(newFrame);
-            PMwrite(frame * PAGE_SIZE + page, newFrame);
+          printRam();
+          PMwrite(frame * PAGE_SIZE + page, newFrame);
             entry = newFrame;
         }
 
