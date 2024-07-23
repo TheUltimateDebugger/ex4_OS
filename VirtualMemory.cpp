@@ -87,9 +87,9 @@ uint64_t find_unused_frame(uint64_t safe_frame){
 }
 
 
-void evict_frame_recursive(uint64_t current_page_addr, uint_least64_t
+bool evict_frame_recursive(uint64_t current_page_addr, uint_least64_t
 wanted_virtual_address, uint64_t *largest_distance, uint64_t *best_frame,
-                           uint64_t depth, uint64_t current_virtual_addr)
+uint64_t *pointer_to_best_frame, uint64_t depth, uint64_t current_virtual_addr)
 {
   if (depth == TABLES_DEPTH)
   {
@@ -101,7 +101,7 @@ wanted_virtual_address, uint64_t *largest_distance, uint64_t *best_frame,
       *largest_distance = current_distance;
       *best_frame = current_page_addr;
     }
-    return;
+    return true;
   }
 
   word_t value = 0;
@@ -114,11 +114,15 @@ wanted_virtual_address, uint64_t *largest_distance, uint64_t *best_frame,
     addr = value;
     if (addr != 0)
     {
-      evict_frame_recursive(addr, wanted_virtual_address, largest_distance,
-                            best_frame, depth+1, current_virtual_addr *
-                                                 PAGE_SIZE +i);
+      if (evict_frame_recursive(addr, wanted_virtual_address, largest_distance,
+                            best_frame, pointer_to_best_frame, depth+1,
+                            current_virtual_addr * PAGE_SIZE +i))
+      {
+        PMwrite (current_page_addr * PAGE_SIZE + i, 0);
+      }
     }
   }
+  return false;
 }
 
 uint64_t evict_frame(uint64_t wanted_virtual_address)
@@ -126,6 +130,7 @@ uint64_t evict_frame(uint64_t wanted_virtual_address)
 
   uint64_t largest_distance = -1;
   uint64_t best_frame = -1;
+  uint64_t pointer_to_best_frame = -1;
   word_t value = 0;
   uint64_t addr;
 
@@ -136,10 +141,15 @@ uint64_t evict_frame(uint64_t wanted_virtual_address)
     addr = value;
     if (addr != 0)
     {
-      evict_frame_recursive(addr, wanted_virtual_address, &largest_distance,
-                            &best_frame, 1, i);
+      if (evict_frame_recursive(addr, wanted_virtual_address,
+                                &largest_distance,
+                            &best_frame, &pointer_to_best_frame, 1, i))
+      {
+        PMwrite (i, 0);
+      }
     }
   }
+
   return best_frame;
 }
 
