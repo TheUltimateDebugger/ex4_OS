@@ -68,7 +68,11 @@ uint64_t find_unused_frame(uint64_t safe_frame)
   word_t value;
   uint64_t page_num;
   uint64_t result = NUM_PAGES + 2;
-  for (int i = 0; i < pow (2, SMALL_OFFSET); ++i)
+
+  uint64_t offset_width = SMALL_OFFSET;
+  if (offset_width == 0)
+    offset_width = OFFSET_WIDTH;
+  for (int i = 0; i < pow (2, offset_width); ++i)
   {
     PMread (i, &value);
     page_num = value;
@@ -142,8 +146,10 @@ uint64_t evict_frame(uint64_t wanted_virtual_address)
   word_t value = 0;
   uint64_t addr;
 
-
-  for (uint64_t i = 0; i < pow(2, OFFSET_WIDTH); ++i)
+  uint64_t offset_width = SMALL_OFFSET;
+  if (offset_width == 0)
+    offset_width = OFFSET_WIDTH;
+  for (uint64_t i = 0; i < pow(2, offset_width); ++i)
   {
     PMread (i, &value);
     addr = value;
