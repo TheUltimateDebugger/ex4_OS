@@ -92,7 +92,7 @@ uint64_t find_unused_frame(uint64_t safe_frame)
       return 1;
     result = NUM_PAGES + 1;
   }
-  if (max_used < NUM_PAGES)
+  if (max_used < NUM_FRAMES)
     return max_used;
   else
     return NUM_PAGES + 1;
@@ -165,6 +165,9 @@ uint64_t evict_frame(uint64_t wanted_virtual_address)
   }
 
   PMwrite (pointer_to_best_frame, 0);
+  word_t value_to_remember;
+  PMread (best_frame, &value_to_remember);
+  PMevict (value_to_remember, best_frame);
   return best_frame;
 }
 
@@ -198,7 +201,7 @@ int VMread(uint64_t virtualAddress, word_t* value){
             // Allocate a new frame if not already mapped
             uint64_t newFrame = find_unused_frame(safe_frame);
             if (newFrame == NUM_PAGES + 1){
-                newFrame = evict_frame(virtualAddress);
+                newFrame = evict_frame(virtualAddress >> OFFSET_WIDTH);
             }
             clearFrame(newFrame);
             PMwrite(frame * PAGE_SIZE + page, newFrame);
@@ -233,7 +236,7 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
             // Allocate a new frame if not already mapped
             uint64_t newFrame = find_unused_frame(safe_frame);
             if (newFrame == NUM_PAGES + 1){
-                newFrame = evict_frame(virtualAddress);
+                newFrame = evict_frame(virtualAddress >> OFFSET_WIDTH);
             }
             clearFrame(newFrame);
             PMwrite(frame * PAGE_SIZE + page, newFrame);
