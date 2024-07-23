@@ -4,9 +4,13 @@
 
 //the offset of the smaller and top layer of the tree (in bytes)
 #define SMALL_OFFSET (VIRTUAL_ADDRESS_WIDTH - OFFSET_WIDTH) % OFFSET_WIDTH
+#define BORDER max(NUM_FRAMES, NUM_PAGES)
 
 uint64_t min(uint64_t a, uint64_t b) {
   return (a < b) ? a : b;
+}
+uint64_t max(uint64_t a, uint64_t b) {
+  return (a > b) ? a : b;
 }
 
 // Helper functions
@@ -37,14 +41,14 @@ uint64_t find_unused_frame_recursive(uint64_t current_page_number,
                                      uint_least64_t
 *max_used, uint64_t depth, uint64_t safe_frame){
   word_t value;
-  uint64_t page_num, result = NUM_PAGES + 2;
+  uint64_t page_num, result = BORDER + 2;
 
   //updates max used tree
   *max_used += 1;
 
 
   if (depth == TABLES_DEPTH) //page is not part of the tree
-    return NUM_PAGES + 1;
+    return BORDER + 1;
 
   for (int i = 0; i < pow(2, OFFSET_WIDTH); ++i)
   {
@@ -54,17 +58,17 @@ uint64_t find_unused_frame_recursive(uint64_t current_page_number,
     {
       result = find_unused_frame_recursive (page_num, max_used, depth + 1,
                                             safe_frame);
-      if (result != NUM_PAGES + 1 && result != NUM_PAGES + 2) //we have a
+      if (result != BORDER + 1 && result != BORDER + 2) //we have a
         // good result
         return result;
     }
   }
   //if result has not changed then current_page has no sons
-  if (result == NUM_PAGES + 2)
+  if (result == BORDER + 2)
   {
     //this is a page without children that is untouchable
     if (safe_frame == current_page_number)
-      return NUM_PAGES + 1;
+      return BORDER + 1;
     result = current_page_number;
   }
 
@@ -76,7 +80,7 @@ uint64_t find_unused_frame(uint64_t safe_frame)
   uint64_t max_used = 1;
   word_t value;
   uint64_t page_num;
-  uint64_t result = NUM_PAGES + 2;
+  uint64_t result = BORDER + 2;
 
   uint64_t offset_width = SMALL_OFFSET;
   if (offset_width == 0)
@@ -89,22 +93,22 @@ uint64_t find_unused_frame(uint64_t safe_frame)
     {
       result = find_unused_frame_recursive (page_num, &max_used, 1, safe_frame);
 
-      if (result != NUM_PAGES + 1 && result != NUM_PAGES + 2) //we have a
+      if (result != BORDER + 1 && result != BORDER + 2) //we have a
         // good result
         return result;
     }
   }
   //if result has not changed then 0 has no sons
-  if (result == NUM_PAGES + 2)
+  if (result == BORDER + 2)
   {
-    if (max_used < NUM_PAGES)
+    if (max_used < BORDER)
       return 1;
-    result = NUM_PAGES + 1;
+    result = BORDER + 1;
   }
   if (max_used < NUM_FRAMES)
     return max_used;
   else
-    return NUM_PAGES + 1;
+    return BORDER + 1;
 }
 
 
@@ -199,7 +203,7 @@ int VMread(uint64_t virtualAddress, word_t* value){
     uint64_t frame = 0; // Start from the root page table in frame 0
     uint64_t offset = getOffset(virtualAddress);
     uint64_t currentAddress = virtualAddress;
-    uint64_t safe_frame = NUM_PAGES + 1;
+    uint64_t safe_frame = BORDER + 1;
 
     for (int depth = 0; depth < TABLES_DEPTH; ++depth) {
         uint64_t page = getPage(currentAddress, depth);
@@ -210,7 +214,7 @@ int VMread(uint64_t virtualAddress, word_t* value){
         if (entry == 0) {
             // Allocate a new frame if not already mapped
             uint64_t newFrame = find_unused_frame(safe_frame);
-            if (newFrame == NUM_PAGES + 1){
+            if (newFrame == BORDER + 1){
                 newFrame = evict_frame(virtualAddress >> OFFSET_WIDTH);
 //                printRam();
             }
@@ -240,7 +244,7 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
     uint64_t frame = 0; // Start from the root page table in frame 0
     uint64_t offset = getOffset(virtualAddress);
     uint64_t currentAddress = virtualAddress;
-    uint64_t safe_frame = NUM_PAGES + 1;
+    uint64_t safe_frame = BORDER + 1;
 
     for (int depth = 0; depth < TABLES_DEPTH; ++depth) {
         uint64_t page = getPage(currentAddress, depth);
@@ -251,7 +255,7 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
         if (entry == 0) {
             // Allocate a new frame if not already mapped
             uint64_t newFrame = find_unused_frame(safe_frame);
-            if (newFrame == NUM_PAGES + 1){
+            if (newFrame == BORDER + 1){
                 newFrame = evict_frame(virtualAddress >> OFFSET_WIDTH);
 //                printRam();
             }

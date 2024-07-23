@@ -5,11 +5,14 @@
 #include <iostream>
 #include <cassert>
 
-int main2(int argc, char **argv) {
+int main(int argc, char **argv) {
     VMinitialize();
     for (uint64_t i = 0; i < (2 * NUM_FRAMES); ++i) {
         printf("writing to %llu\n", (long long int) i);
         VMwrite(5 * i * PAGE_SIZE, i);
+        printRam();
+        printf("-----------------------\n");
+
     }
     printRam();
     for (uint64_t i = 0; i < (2 * NUM_FRAMES); ++i) {
@@ -23,7 +26,7 @@ int main2(int argc, char **argv) {
     return 0;
 }
 
-int main(int argc, char **argv)
+int main2(int argc, char **argv)
 {
     VMinitialize();
     printRam();
@@ -48,4 +51,6 @@ int main(int argc, char **argv)
     word_t val4;
     VMread(31, &val4);
     std::cout << "should be <>> val4: " << val4 << std::endl;
-    printRam();}
+    printRam();
+    return 0;
+}
