@@ -52,10 +52,12 @@ uint64_t find_unused_frame_recursive(uint64_t current_page_number,
   }
   //if result has not changed then current_page has no sons
   if (result == NUM_PAGES + 2)
+  {
     //this is a page without children that is untouchable
     if (safe_frame == current_page_number)
       return NUM_PAGES + 1;
     result = current_page_number;
+  }
 
   return result;
 }
