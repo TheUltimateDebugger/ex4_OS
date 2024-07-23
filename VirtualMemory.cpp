@@ -27,14 +27,14 @@ void clearFrame(uint64_t frame) {
 uint64_t find_unused_frame_recursive(uint64_t current_page_addr, uint_least64_t
 *max_used, uint64_t depth, uint64_t safe_frame){
   word_t value;
-  uint64_t addr, result = -2;
+  uint64_t addr, result = NUM_FRAMES + 2;
 
   //updates max used tree
   *max_used += 1;
 
 
   if (depth == TABLES_DEPTH) //page is not part of the tree
-    return -1;
+    return NUM_FRAMES + 1;
 
   for (int i = 0; i < pow(2, OFFSET_WIDTH); ++i)
   {
@@ -43,15 +43,16 @@ uint64_t find_unused_frame_recursive(uint64_t current_page_addr, uint_least64_t
     if (addr != 0)
     {
       result = find_unused_frame_recursive (addr, max_used, depth + 1, safe_frame);
-      if (result != -1 && result != -2) //we have a good result
+      if (result != NUM_FRAMES + 1 && result != NUM_FRAMES + 2) //we have a
+        // good result
         return result;
     }
   }
   //if result has not changed then current_page has no sons
-  if (result == -2)
+  if (result == NUM_FRAMES + 2)
     //this is a page without children that is untouchable
     if (safe_frame == current_page_addr)
-      return -1;
+      return NUM_FRAMES + 1;
     result = current_page_addr;
 
   return result;
@@ -60,7 +61,8 @@ uint64_t find_unused_frame_recursive(uint64_t current_page_addr, uint_least64_t
 uint64_t find_unused_frame(uint64_t safe_frame){
   uint64_t max_used = 1;
   word_t value;
-  uint64_t addr, result = -2;
+  uint64_t addr;
+  uint64_t result = NUM_FRAMES + 2;
   for (int i = 0; i < pow(2, SMALL_OFFSET); ++i)
   {
     PMread (i, &value);
@@ -69,21 +71,22 @@ uint64_t find_unused_frame(uint64_t safe_frame){
     {
       result = find_unused_frame_recursive (addr, &max_used, 1, safe_frame);
 
-      if (result != -1 && result != -2) //we have a good result
+      if (result != NUM_FRAMES + 1 && result != NUM_FRAMES + 2) //we have a
+        // good result
         return result;
     }
   }
   //if result has not changed then 0 has no sons
-  if (result == -2)
+  if (result == NUM_FRAMES + 2)
     if (safe_frame == 0)
-      result = -1;
+      result = NUM_FRAMES + 1;
     else
       return 0; //the current frame address is 0
-  if (result == -1) //should be always correct
+  if (result == NUM_FRAMES + 1) //should be always correct
     if (max_used < NUM_FRAMES)
       return max_used * PAGE_SIZE;
     else
-      return -1;
+      return NUM_FRAMES + 1;
 }
 
 
@@ -128,9 +131,9 @@ uint64_t *pointer_to_best_frame, uint64_t depth, uint64_t current_virtual_addr)
 uint64_t evict_frame(uint64_t wanted_virtual_address)
 {
 
-  uint64_t largest_distance = -1;
-  uint64_t best_frame = -1;
-  uint64_t pointer_to_best_frame = -1;
+  uint64_t largest_distance = 0;
+  uint64_t best_frame = 0;
+  uint64_t pointer_to_best_frame = 0;
   word_t value = 0;
   uint64_t addr;
 
@@ -172,7 +175,7 @@ int VMread(uint64_t virtualAddress, word_t* value){
     uint64_t frame = 0; // Start from the root page table in frame 0
     uint64_t offset = getOffset(virtualAddress);
     uint64_t currentAddress = virtualAddress;
-    uint64_t safe_frame = -1;
+    uint64_t safe_frame = NUM_FRAMES + 1;
 
     for (int depth = 0; depth < TABLES_DEPTH; ++depth) {
         uint64_t page = getPage(currentAddress, depth);
@@ -182,7 +185,7 @@ int VMread(uint64_t virtualAddress, word_t* value){
         if (entry == 0) {
             // Allocate a new frame if not already mapped
             uint64_t newFrame = find_unused_frame(safe_frame);
-            if (newFrame == -1){
+            if (newFrame == NUM_FRAMES + 1){
                 newFrame = evict_frame(virtualAddress);
             }
             clearFrame(newFrame);
@@ -207,7 +210,7 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
     uint64_t frame = 0; // Start from the root page table in frame 0
     uint64_t offset = getOffset(virtualAddress);
     uint64_t currentAddress = virtualAddress;
-    uint64_t safe_frame = -1;
+    uint64_t safe_frame = NUM_FRAMES + 1;
 
     for (int depth = 0; depth < TABLES_DEPTH; ++depth) {
         uint64_t page = getPage(currentAddress, depth);
@@ -217,7 +220,7 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
         if (entry == 0) {
             // Allocate a new frame if not already mapped
             uint64_t newFrame = find_unused_frame(safe_frame);
-            if (newFrame == -1){
+            if (newFrame == NUM_FRAMES + 1){
                 newFrame = evict_frame(virtualAddress);
             }
             clearFrame(newFrame);
