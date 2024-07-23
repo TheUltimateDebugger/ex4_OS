@@ -26,15 +26,6 @@ void clearFrame(uint64_t frame) {
     for (uint64_t i = 0; i < PAGE_SIZE; ++i) {
         PMwrite(frame * PAGE_SIZE + i, 0);
     }
-    for (uint64_t i = 0; i < NUM_FRAMES; ++i) {
-        for (uint64_t j = 0; j < PAGE_SIZE; ++j) {
-            word_t value;
-            PMread(i * PAGE_SIZE + j, &value);
-            if (value == frame) {
-                PMwrite(i * PAGE_SIZE + j, 0);
-            }
-        }
-    }
 }
 
 uint64_t find_unused_frame_recursive(uint64_t current_page_number,
@@ -59,8 +50,14 @@ uint64_t find_unused_frame_recursive(uint64_t current_page_number,
       result = find_unused_frame_recursive (page_num, max_used, depth + 1,
                                             safe_frame);
       if (result != BORDER + 1 && result != BORDER + 2) //we have a
+      {
+        if (page_num == result)
+        {
+          PMwrite (current_page_number * PAGE_SIZE + i, 0);
+        }
         // good result
         return result;
+      }
     }
   }
   //if result has not changed then current_page has no sons
@@ -94,8 +91,14 @@ uint64_t find_unused_frame(uint64_t safe_frame)
       result = find_unused_frame_recursive (page_num, &max_used, 1, safe_frame);
 
       if (result != BORDER + 1 && result != BORDER + 2) //we have a
+      {
         // good result
+        if (page_num == result)
+        {
+          PMwrite (i, 0);
+        }
         return result;
+      }
     }
   }
   //if result has not changed then 0 has no sons
@@ -114,7 +117,9 @@ uint64_t find_unused_frame(uint64_t safe_frame)
 
 bool evict_frame_recursive(uint64_t current_page_number, uint_least64_t
 wanted_virtual_address, uint64_t *largest_distance, uint64_t *best_frame,
-uint64_t *pointer_to_best_frame, uint64_t depth, uint64_t current_virtual_addr)
+uint64_t *pointer_to_best_frame, uint64_t *best_virtual_address, uint64_t
+depth, uint64_t
+current_virtual_addr)
 {
   if (depth == TABLES_DEPTH)
   {
@@ -125,8 +130,10 @@ uint64_t *pointer_to_best_frame, uint64_t depth, uint64_t current_virtual_addr)
     {
       *largest_distance = current_distance;
       *best_frame = current_page_number;
+      *best_virtual_address = current_virtual_addr;
+      return true;
     }
-    return true;
+    return false;
   }
 
   word_t value = 0;
@@ -140,7 +147,8 @@ uint64_t *pointer_to_best_frame, uint64_t depth, uint64_t current_virtual_addr)
     if (page_num != 0)
     {
       if (evict_frame_recursive(page_num, wanted_virtual_address, largest_distance,
-                            best_frame, pointer_to_best_frame, depth+1,
+                            best_frame, pointer_to_best_frame,
+                            best_virtual_address, depth+1,
                             current_virtual_addr * PAGE_SIZE +i))
       {
         *pointer_to_best_frame = current_page_number * PAGE_SIZE + i;
@@ -156,6 +164,7 @@ uint64_t evict_frame(uint64_t wanted_virtual_address)
   uint64_t largest_distance = 0;
   uint64_t best_frame = 0;
   uint64_t pointer_to_best_frame = 0;
+  uint64_t best_virtual_address = 0;
   word_t value = 0;
   uint64_t page_num;
 
@@ -170,7 +179,8 @@ uint64_t evict_frame(uint64_t wanted_virtual_address)
     {
       if (evict_frame_recursive(page_num, wanted_virtual_address,
                                 &largest_distance,
-                            &best_frame, &pointer_to_best_frame, 1, i))
+                            &best_frame, &pointer_to_best_frame,
+                            &best_virtual_address, 1, i))
       {
         pointer_to_best_frame = i;
       }
@@ -180,7 +190,7 @@ uint64_t evict_frame(uint64_t wanted_virtual_address)
   PMwrite (pointer_to_best_frame, 0);
   word_t value_to_remember;
   PMread (best_frame, &value_to_remember);
-  PMevict (value_to_remember, best_frame);
+  PMevict (best_frame, best_virtual_address);
   return best_frame;
 }
 
@@ -222,7 +232,7 @@ int VMread(uint64_t virtualAddress, word_t* value){
             clearFrame(newFrame);
             PMwrite(frame * PAGE_SIZE + page, newFrame);
             entry = newFrame;
-            if (depth == TABLES_DEPTH){
+            if (depth == TABLES_DEPTH-1){
                 PMrestore(newFrame, virtualAddress >> OFFSET_WIDTH);
             }
         }
@@ -263,7 +273,7 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
             clearFrame(newFrame);
             PMwrite(frame * PAGE_SIZE + page, newFrame);
             entry = newFrame;
-            if (depth == TABLES_DEPTH){
+            if (depth == TABLES_DEPTH-1){
                 PMrestore(newFrame, virtualAddress >> OFFSET_WIDTH);
             }
         }

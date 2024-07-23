@@ -40,7 +40,7 @@ void PMwrite(uint64_t physicalAddress, word_t value) {
 }
 
 void PMevict(uint64_t frameIndex, uint64_t evictedPageIndex) {
-//    std::cout << "evict " << evictedPageIndex << " from the frame " <<frameIndex<< std::endl;
+    std::cout << "evict " << evictedPageIndex << " from the frame " <<frameIndex<< std::endl;
     if (RAM.empty())
         initialize();
 
@@ -53,7 +53,7 @@ void PMevict(uint64_t frameIndex, uint64_t evictedPageIndex) {
 }
 
 void PMrestore(uint64_t frameIndex, uint64_t restoredPageIndex) {
-//    std::cout << "restore " << restoredPageIndex << " from the hard drive to the frame " << frameIndex << std::endl;
+    std::cout << "restore " << restoredPageIndex << " from the hard drive to the frame " << frameIndex << std::endl;
     if (RAM.empty())
         initialize();
 
