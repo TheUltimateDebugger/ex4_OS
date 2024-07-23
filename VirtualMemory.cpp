@@ -22,6 +22,15 @@ void clearFrame(uint64_t frame) {
     for (uint64_t i = 0; i < PAGE_SIZE; ++i) {
         PMwrite(frame * PAGE_SIZE + i, 0);
     }
+    for (uint64_t i = 0; i < NUM_FRAMES; ++i) {
+        for (uint64_t j = 0; j < PAGE_SIZE; ++j) {
+            word_t value;
+            PMread(i * PAGE_SIZE + j, &value);
+            if (value == frame) {
+                PMwrite(i * PAGE_SIZE + j, 0);
+            }
+        }
+    }
 }
 
 uint64_t find_unused_frame_recursive(uint64_t current_page_number,
@@ -196,17 +205,22 @@ int VMread(uint64_t virtualAddress, word_t* value){
         uint64_t page = getPage(currentAddress, depth);
         word_t entry;
         PMread(frame * PAGE_SIZE + page, &entry);
+//        printRam();
 
         if (entry == 0) {
             // Allocate a new frame if not already mapped
             uint64_t newFrame = find_unused_frame(safe_frame);
             if (newFrame == NUM_PAGES + 1){
                 newFrame = evict_frame(virtualAddress >> OFFSET_WIDTH);
+//                printRam();
             }
+            //            The restore will be here probably
             clearFrame(newFrame);
-          printRam();
-          PMwrite(frame * PAGE_SIZE + page, newFrame);
+            PMwrite(frame * PAGE_SIZE + page, newFrame);
             entry = newFrame;
+            if (depth == TABLES_DEPTH){
+                PMrestore(newFrame, virtualAddress >> OFFSET_WIDTH);
+            }
         }
 
         frame = entry;
@@ -232,18 +246,23 @@ int VMwrite(uint64_t virtualAddress, word_t value) {
         uint64_t page = getPage(currentAddress, depth);
         word_t entry;
         PMread(frame * PAGE_SIZE + page, &entry);
+//        printRam();
 
         if (entry == 0) {
             // Allocate a new frame if not already mapped
             uint64_t newFrame = find_unused_frame(safe_frame);
             if (newFrame == NUM_PAGES + 1){
                 newFrame = evict_frame(virtualAddress >> OFFSET_WIDTH);
+//                printRam();
             }
+//            The restore will be here probably
             clearFrame(newFrame);
             PMwrite(frame * PAGE_SIZE + page, newFrame);
             entry = newFrame;
+            if (depth == TABLES_DEPTH){
+                PMrestore(newFrame, virtualAddress >> OFFSET_WIDTH);
+            }
         }
-
         frame = entry;
         safe_frame = frame;
     }

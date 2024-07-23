@@ -11,7 +11,7 @@ int main2(int argc, char **argv) {
         printf("writing to %llu\n", (long long int) i);
         VMwrite(5 * i * PAGE_SIZE, i);
     }
-
+    printRam();
     for (uint64_t i = 0; i < (2 * NUM_FRAMES); ++i) {
         word_t value;
         VMread(5 * i * PAGE_SIZE, &value);
@@ -35,6 +35,7 @@ int main(int argc, char **argv)
     std::cout << "should be 3 val1: " << val1 << std::endl;
     word_t val2;
     VMread(13, &val2);
+    printRam();
     std::cout << "should be 3 val2: " << val2 << std::endl;
 
     word_t val3;
